@@ -1,4 +1,4 @@
-# YOLO Web App & DevOps 
+# YOLO Web App & DevOps Version C
 
 ## 1. Overview
 Object detection web app using FastAPI, React, and Ultralytics YOLO
