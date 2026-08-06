@@ -1,0 +1,13 @@
+# Python / YOLO
+__pycache__/
+*.py[cod]
+*.pt
+*.onnx
+.env
+venv/
+
+# Node / React
+node_modules/
+dist/
+build/
+.DS_Store
