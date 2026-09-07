@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Web App - Detection</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: inline-block;
+            max-width: 650px;
+            width: 100%;
+        }
+
+        .form-group {
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        .status-msg {
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 20px;
+        }
+
+        .result-box {
+            margin-top: 20px;
+        }
+
+        img, video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Nhận diện vật thể YOLOv8</h2>
+
+        <div class="form-group">
+            <label for="fileInput">Chọn ảnh (JPG, PNG) hoặc video (MP4):</label>
+            <input 
+                type="file" 
+                id="fileInput" 
+                accept="image/jpeg,image/png,image/jpg,video/mp4"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="confInput">Độ tin cậy (Confidence): <span id="confValue">0.25</span></label>
+            <div class="slider-container">
+                <input 
+                    type="range" 
+                    id="confInput" 
+                    min="0.05" 
+                    max="0.95" 
+                    step="0.05" 
+                    value="0.25"
+                    oninput="document.getElementById('confValue').textContent = this.value"
+                >
+            </div>
+        </div>
+
+        <button id="btnSubmit" onclick="uploadFile()">Bắt đầu nhận diện</button>
+
+        <div class="status-msg" id="statusMessage"></div>
+
+        <div class="result-box">
+            <h3>Kết quả:</h3>
+            <img id="resultImage" alt="Chưa có kết quả ảnh" style="display: none;">
+            <video id="resultVideo" controls style="display: none;"></video>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000";
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB theo cấu hình backend
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const confInput = document.getElementById('confInput');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const statusMsg = document.getElementById('statusMessage');
+            const resultImage = document.getElementById('resultImage');
+            const resultVideo = document.getElementById('resultVideo');
+
+            // 1. Kiểm tra đầu vào
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Vui lòng chọn một file trước!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            if (file.size > MAX_FILE_SIZE) {
+                alert("Dung lượng file vượt quá giới hạn 10MB của server!");
+                return;
+            }
+
+            // 2. Định tuyến endpoint theo content-type
+            let endpointUrl = "";
+            const isImage = ["image/jpeg", "image/png", "image/jpg"].includes(file.type);
+            const isVideo = file.type === "video/mp4";
+
+            if (isImage) {
+                endpointUrl = `${API_BASE_URL}/api/detect/image`;
+            } else if (isVideo) {
+                endpointUrl = `${API_BASE_URL}/api/detect/video`;
+            } else {
+                alert("Định dạng file không được hỗ trợ! Chỉ nhận JPG, PNG hoặc MP4.");
+                return;
+            }
+
+            // 3. Chuẩn bị FormData
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("confidence", confInput.value);
+
+            // 4. Reset giao diện
+            resultImage.style.display = 'none';
+            resultVideo.style.display = 'none';
+            btnSubmit.disabled = true;
+            statusMsg.style.color = "#0056b3";
+            statusMsg.textContent = isVideo ? "Đang xử lý từng khung hình video, vui lòng đợi..." : "Đang xử lý ảnh...";
+
+            try {
+                const response = await fetch(endpointUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let errMsg = "Lỗi xử lý file tại server!";
+                    try {
+                        const errJson = await response.json();
+                        errMsg = errJson.detail || errMsg;
+                    } catch (_) {}
+                    throw new Error(`[${response.status}] ${errMsg}`);
+                }
+
+                // 5. Hiển thị kết quả trả về
+                const rawBlob = await response.blob();
+                const processedBlob = isVideo 
+                    ? new Blob([rawBlob], { type: "video/mp4" }) 
+                    : rawBlob;
+
+                const objectURL = URL.createObjectURL(processedBlob);
+
+                if (isImage) {
+                    resultImage.src = objectURL;
+                    resultImage.style.display = 'block';
+                } else {
+                    resultVideo.src = objectURL;
+                    resultVideo.style.display = 'block';
+                    resultVideo.load();
+                }
+
+                statusMsg.style.color = "green";
+                statusMsg.textContent = "Nhận diện hoàn tất!";
+            } catch (error) {
+                console.error(error);
+                statusMsg.style.color = "red";
+                statusMsg.textContent = error.message;
+            } finally {
+                btnSubmit.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

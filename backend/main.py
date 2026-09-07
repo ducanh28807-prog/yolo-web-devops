@@ -9,15 +9,10 @@ from ultralytics import YOLO
 
 app = FastAPI(title="YOLO Object Detection API")
 
-# 1. Cấu hình CORS cho phép React Frontend (Vite) truy cập
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
+# Cấu hình CORS cho phép cả cổng Vite và Live Server / file cục bộ truy cập
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Mở cho mọi port trong giai đoạn phát triển nội bộ
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
