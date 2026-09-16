@@ -110,14 +110,3 @@ docker exec -it yolo-backend-app pytest test_main.py -v
 3. **Môi trường suy luận:** Mô hình YOLOv8 thực thi bằng CPU, chưa tích hợp tăng tốc phần cứng qua GPU/CUDA.
 
 ---
-
-## 8. Minh chứng kết quả (Screenshots)
-
-* **Giao diện Swagger Docs (`/docs`):**  
-  `docs/screenshots/swagger_docs.png`
-* **Giao diện nhận diện ảnh:**  
-  `docs/screenshots/image_result.png`
-* **Giao diện nhận diện video:**  
-  `docs/screenshots/video_result.png`
-* **Kết quả kiểm thử pytest bên trong container:**  
-  `docs/screenshots/pytest_results.png`
