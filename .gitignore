@@ -10,3 +10,6 @@ dist/
 build/
 .DS_Store
 
+.env
+backend/static/*
+!backend/static/.gitkeep
