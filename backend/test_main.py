@@ -43,4 +43,4 @@ def test_detect_image_invalid_file_type():
     )
 
     assert response.status_code == 415
-    assert response.json()["detail"] == "Chỉ chấp nhận file ảnh định dạng JPG hoặc PNG."
+    assert response.json()["detail"] == "Chỉ chấp nhận file ảnh JPG hoặc PNG."
