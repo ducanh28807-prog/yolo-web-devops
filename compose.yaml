@@ -1,38 +1,59 @@
+# Khai báo các dịch vụ container trong hệ thống
 services:
+  # DỊCH VỤ 1: BACKEND (FastAPI + YOLOv8)
   backend:
+    # Chỉ định thư mục chứa mã nguồn backend và Dockerfile
     build: ./backend
+    # Đặt tên định danh cố định cho container backend
     container_name: yolo-backend-app
-    ports:
-      - "8000:8000"
+    # Chỉ mở cổng 8000 trong mạng nội bộ Docker, tuyệt đối không mở ra máy host
+    expose:
+      - "8000"
+    # Tải các biến môi trường cấu hình từ file .env
     env_file:
       - .env
+    # Ánh xạ thư mục lưu trữ ảnh và video kết quả ra ngoài máy host
     volumes:
-      # Giữ lại file ảnh/video tạm ngoài máy host (Requirement 7)
       - ./backend/static:/app/static
+    # Cấu hình kiểm tra trạng thái sức khỏe định kỳ của tiến trình Backend
     healthcheck:
-      # Kiểm tra định kỳ xem Uvicorn & YOLO đã nạp xong chưa (Requirement 4)
+      # Thực thi lệnh python nội bộ gọi endpoint /health để kiểm tra Uvicorn
       test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      # Chu kỳ kiểm tra lặp lại sau mỗi 10 giây
       interval: 10s
+      # Thời gian chờ phản hồi tối đa của mỗi lần kiểm tra là 5 giây
       timeout: 5s
+      # Đánh dấu container Unhealthy nếu thất bại liên tiếp 3 lần
       retries: 3
+      # Dành 10 giây đầu tiên cho mô hình nạp trọng số trước khi bắt đầu kiểm tra
       start_period: 10s
+    # Gắn container backend vào mạng bridge chung
     networks:
       - yolo-net
 
+  # DỊCH VỤ 2: FRONTEND (React SPA + Nginx Reverse Proxy)
   frontend:
+    # Chỉ định thư mục chứa mã nguồn frontend và Dockerfile
     build: ./frontend
+    # Đặt tên định danh cố định cho container frontend
     container_name: yolo-frontend-app
+    # Cửa ngõ duy nhất thông ra máy host: Cổng 80 máy host nối vào cổng 80 của Nginx
     ports:
-      - "5173:80"
+      - "80:80"
+    # Tải các biến môi trường cấu hình từ file .env
     env_file:
       - .env
+    # Ràng buộc điều kiện khởi động phụ thuộc vào backend
     depends_on:
-      # Frontend chỉ được bật khi Backend đã thực sự khỏe mạnh (healthy)
       backend:
+        # Chỉ bật frontend khi backend đã vượt qua kiểm tra và đạt trạng thái Healthy
         condition: service_healthy
+    # Gắn container frontend vào cùng mạng bridge chung với backend
     networks:
       - yolo-net
 
+# KHAI BÁO MẠNG CHUNG
 networks:
   yolo-net:
+    # Sử dụng driver bridge để cấp DNS phân giải tên container thành IP nội bộ
     driver: bridge

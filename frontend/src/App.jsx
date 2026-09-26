@@ -94,7 +94,7 @@ export default function App() {
     // Đính kèm cờ lưu trữ kết quả dưới dạng chuỗi
     formData.append("save", String(saveResult));
 
-    // Xác định endpoint tương đối tùy theo loại file đang xử lý
+    // Xác định endpoint tương đối tùy theo loại file đang xử lý qua Nginx
     const endpoint = fileType === "video" 
       ? "/api/detect/video" 
       : "/api/detect/image";
