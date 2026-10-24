@@ -1,6 +1,10 @@
 // Nhập các React hook quản lý trạng thái và vòng đời component
 import { useState, useEffect } from 'react';
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || ""
+).replace(/\/+$/, "");
+
 // Xuất component chính của ứng dụng
 export default function App() {
   // Quản lý file nhị phân được người dùng chọn tải lên
@@ -28,7 +32,7 @@ export default function App() {
   const fetchHistory = async () => {
     try {
       // Gửi yêu cầu GET qua đường dẫn tương đối để Nginx chuyển tiếp sang Backend
-      const res = await fetch("/api/results");
+      const res = await fetch(`${API_BASE_URL}/api/results`);
       // Nếu server phản hồi trạng thái thành công HTTP 200
       if (res.ok) {
         // Giải mã gói dữ liệu JSON
@@ -101,7 +105,7 @@ export default function App() {
 
     try {
       // Thực hiện gửi POST request thông qua Nginx Reverse Proxy
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         body: formData,
       });
